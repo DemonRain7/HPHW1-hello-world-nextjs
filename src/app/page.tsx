@@ -1,59 +1,40 @@
-import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
 
-type Image = {
-  id: number
-  url?: string
-  image_url?: string
-  title?: string
-  description?: string
-  created_at?: string
-  [key: string]: unknown
-}
-
-export default async function Home() {
-  const { data: images, error } = await supabase
-    .from('images')
-    .select('*')
-    .limit(20)
-
-  if (error) {
-    return (
-      <main className="min-h-screen p-8">
-        <h1 className="text-3xl font-bold mb-6 text-red-500">Error</h1>
-        <p>{error.message}</p>
-      </main>
-    )
-  }
+export default async function HomePage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   return (
-    <main className="min-h-screen p-8">
-      <h1 className="text-3xl font-bold mb-6">Images Gallery</h1>
+    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center gap-6 px-6">
+      <h1 className="text-3xl font-bold">HW3: Protected Route + Gated UI</h1>
+      <p className="text-lg text-gray-700">
+        This app protects <code>/protected</code> and only shows its gated UI
+        to authenticated users.
+      </p>
 
-      {/* Layout of the images */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {images?.map((image: Image) => (
-          <div
-            key={image.id}
-            className="p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+      {user ? (
+        <div className="rounded-xl border border-green-400 bg-green-50 p-4">
+          <p className="font-medium text-green-900">Signed in as: {user.email}</p>
+          <Link
+            href="/protected"
+            className="mt-3 inline-block rounded bg-green-700 px-4 py-2 font-medium text-white hover:bg-green-800"
           >
-            {(image.url || image.image_url) && (
-              <img
-                src={image.url || image.image_url}
-                alt={image.title || `Image ${image.id}`}
-                className="w-full h-48 object-cover rounded mb-2"
-              />
-            )}
-            <p className="font-semibold">ID: {image.id}</p>
-            {image.title && <p>{image.title}</p>}
-            {image.description && (
-              <p className="text-gray-600 text-sm">{image.description}</p>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {images?.length === 0 && (
-        <p className="text-gray-500">No images found.</p>
+            Go to Protected Page
+          </Link>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-gray-300 bg-gray-50 p-4">
+          <p className="font-medium">You are not signed in.</p>
+          <Link
+            href="/login"
+            className="mt-3 inline-block rounded bg-blue-700 px-4 py-2 font-medium text-white hover:bg-blue-800"
+          >
+            Sign in with Google
+          </Link>
+        </div>
       )}
     </main>
   )
