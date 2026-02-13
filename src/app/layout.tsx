@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HW3 Protected Route App",
-  description: "Google OAuth protected route with Supabase SSR",
+  title: "HW4 Caption Rating App",
+  description: "Protected route with Google OAuth and caption voting",
 };
 
 export default function RootLayout({

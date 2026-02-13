@@ -9,10 +9,10 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center gap-6 px-6">
-      <h1 className="text-3xl font-bold">HW3: Protected Route + Gated UI</h1>
+      <h1 className="text-3xl font-bold">HW4: Protected Route + Caption Ratings</h1>
       <p className="text-lg text-gray-700">
-        This app protects <code>/protected</code> and only shows its gated UI
-        to authenticated users.
+        This app protects <code>/protected</code> and lets authenticated users
+        add rows to <code>caption_votes</code> by rating captions.
       </p>
 
       {user ? (
@@ -22,7 +22,7 @@ export default async function HomePage() {
             href="/protected"
             className="mt-3 inline-block rounded bg-green-700 px-4 py-2 font-medium text-white hover:bg-green-800"
           >
-            Go to Protected Page
+            Go to Rating Page
           </Link>
         </div>
       ) : (
