@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HW4 Caption Rating App",
-  description: "Protected route with Google OAuth and caption voting",
+  title: "HW5 Caption Pipeline App",
+  description: "Protected route with Google OAuth, image upload, and generated captions",
 };
 
 export default function RootLayout({
