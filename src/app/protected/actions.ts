@@ -33,6 +33,8 @@ export async function rateCaption(formData: FormData) {
     caption_id: captionId,
     vote_value: voteValue,
     profile_id: user.id,
+    created_by_user_id: user.id,
+    modified_by_user_id: user.id,
     created_datetime_utc: nowIso,
     modified_datetime_utc: nowIso,
   })
@@ -47,6 +49,7 @@ export async function rateCaption(formData: FormData) {
       .from('caption_votes')
       .update({
         vote_value: voteValue,
+        modified_by_user_id: user.id,
         modified_datetime_utc: new Date().toISOString(),
       })
       .eq('caption_id', captionId)
