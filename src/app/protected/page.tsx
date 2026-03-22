@@ -4,9 +4,12 @@ import { rateCaption, signOut } from './actions'
 import CaptionPipelineForm from './caption-pipeline-form'
 import { createClient } from '@/lib/supabase/server'
 
+const PAGE_SIZE = 12
+
 type ProtectedPageProps = {
   searchParams?: Promise<{
     vote?: string
+    page?: string
   }>
 }
 
@@ -22,13 +25,17 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
 
   const params = await searchParams
   const voteStatus = params?.vote
+  const currentPage = Math.max(1, parseInt(params?.page ?? '1', 10) || 1)
+  const offset = (currentPage - 1) * PAGE_SIZE
 
   const { data: captions, error: captionsError } = await supabase
     .from('captions')
     .select('id, content, like_count, image_id, images(url)')
     .eq('is_public', true)
+    .not('content', 'is', null)
+    .neq('content', '')
     .order('created_datetime_utc', { ascending: false })
-    .limit(12)
+    .range(offset, offset + PAGE_SIZE)
 
   const { data: recentVotes, error: votesError } = await supabase
     .from('caption_votes')
@@ -157,7 +164,7 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
                   />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-relaxed text-gray-900">{caption.content || <span className="italic text-gray-400">No caption text</span>}</p>
+                  <p className="text-sm leading-relaxed text-gray-900">{caption.content}</p>
                   <div className="mt-2 flex items-center gap-3">
                     <span className="text-xs text-gray-400">
                       ID: <code className="font-mono">{caption.id}</code>
@@ -199,6 +206,31 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
             </article>
             )
           })}
+        </div>
+
+        {/* Pagination */}
+        <div className="mt-4 flex items-center justify-between">
+          {currentPage > 1 ? (
+            <Link
+              href={`/protected?page=${currentPage - 1}`}
+              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+              ← Previous
+            </Link>
+          ) : (
+            <div />
+          )}
+          <span className="text-xs text-gray-400">Page {currentPage}</span>
+          {captions && captions.length > PAGE_SIZE ? (
+            <Link
+              href={`/protected?page=${currentPage + 1}`}
+              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+              Next →
+            </Link>
+          ) : (
+            <div />
+          )}
         </div>
       </section>
 
