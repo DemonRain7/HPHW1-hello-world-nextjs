@@ -25,14 +25,14 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
 
   const { data: captions, error: captionsError } = await supabase
     .from('captions')
-    .select('id, content, like_count')
+    .select('id, content, like_count, image_id, images(url)')
     .eq('is_public', true)
     .order('created_datetime_utc', { ascending: false })
     .limit(12)
 
   const { data: recentVotes, error: votesError } = await supabase
     .from('caption_votes')
-    .select('id, caption_id, vote_value, created_datetime_utc')
+    .select('id, caption_id, vote_value, created_datetime_utc, captions(content)')
     .eq('profile_id', user.id)
     .order('created_datetime_utc', { ascending: false })
     .limit(8)
@@ -141,19 +141,32 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
         )}
 
         <div className="mt-5 grid gap-4">
-          {captions?.map((caption) => (
+          {captions?.map((caption) => {
+            const imageUrl = (caption.images as { url?: string } | null)?.url ?? null
+            return (
             <article
               key={caption.id}
               className="rounded-xl border border-gray-200 bg-gray-50 p-4 transition-shadow hover:shadow-sm"
             >
-              <p className="text-sm leading-relaxed text-gray-900">{caption.content}</p>
-              <div className="mt-2 flex items-center gap-3">
-                <span className="text-xs text-gray-400">
-                  ID: <code className="font-mono">{caption.id}</code>
-                </span>
-                <span className="text-xs text-gray-400">
-                  Likes: {caption.like_count ?? 0}
-                </span>
+              <div className="flex gap-4">
+                {imageUrl && (
+                  <img
+                    src={imageUrl}
+                    alt="Caption source image"
+                    className="h-24 w-24 flex-shrink-0 rounded-lg object-cover border border-gray-200"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm leading-relaxed text-gray-900">{caption.content}</p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <span className="text-xs text-gray-400">
+                      ID: <code className="font-mono">{caption.id}</code>
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      Likes: {caption.like_count ?? 0}
+                    </span>
+                  </div>
+                </div>
               </div>
               <div className="mt-3 flex gap-2">
                 <form action={rateCaption}>
@@ -184,7 +197,8 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
                 </form>
               </div>
             </article>
-          ))}
+            )
+          })}
         </div>
       </section>
 
@@ -215,14 +229,21 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
                 No votes yet. Submit one above.
               </li>
             )}
-            {(recentVotes ?? []).map((vote) => (
+            {(recentVotes ?? []).map((vote) => {
+              const captionContent = (vote.captions as { content?: string } | null)?.content ?? null
+              return (
               <li
                 key={vote.id}
                 className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-4 py-3"
               >
-                <p className="min-w-0 truncate font-mono text-xs text-gray-500">
-                  Caption: {vote.caption_id}
-                </p>
+                <div className="min-w-0 flex-1">
+                  {captionContent && (
+                    <p className="truncate text-sm text-gray-700">{captionContent}</p>
+                  )}
+                  <p className="min-w-0 truncate font-mono text-xs text-gray-400">
+                    ID: {vote.caption_id}
+                  </p>
+                </div>
                 <span
                   className={`ml-3 flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                     vote.vote_value > 0
@@ -233,7 +254,8 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
                   {vote.vote_value > 0 ? '+1' : '-1'}
                 </span>
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
       </section>
