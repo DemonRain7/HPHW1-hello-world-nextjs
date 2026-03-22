@@ -157,7 +157,7 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
                   />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-relaxed text-gray-900">{caption.content}</p>
+                  <p className="text-sm leading-relaxed text-gray-900">{caption.content || <span className="italic text-gray-400">No caption text</span>}</p>
                   <div className="mt-2 flex items-center gap-3">
                     <span className="text-xs text-gray-400">
                       ID: <code className="font-mono">{caption.id}</code>
