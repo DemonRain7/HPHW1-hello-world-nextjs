@@ -6,6 +6,34 @@ import { createClient } from '@/lib/supabase/server'
 
 const PAGE_SIZE = 12
 
+/** Extract readable caption text from content that might be raw JSON */
+function extractCaptionText(content: string | null): string | null {
+  if (!content) return null
+  const trimmed = content.trim()
+  // If it looks like JSON (starts with [ or {), try to parse it
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      const items = Array.isArray(parsed) ? parsed : [parsed]
+      const texts: string[] = []
+      for (const item of items) {
+        if (typeof item === 'string' && item.trim()) {
+          texts.push(item.trim())
+        } else if (item && typeof item === 'object') {
+          const text = item.content ?? item.caption ?? item.text
+          if (typeof text === 'string' && text.trim()) {
+            texts.push(text.trim())
+          }
+        }
+      }
+      if (texts.length > 0) return texts.join(' | ')
+    } catch {
+      // not valid JSON, fall through to return as-is
+    }
+  }
+  return trimmed
+}
+
 type ProtectedPageProps = {
   searchParams?: Promise<{
     vote?: string
@@ -218,7 +246,7 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
                       </svg>
                     </div>
                   )}
-                  <p className="min-w-0 flex-1 truncate text-sm text-gray-800">{cap.content}</p>
+                  <p className="min-w-0 flex-1 truncate text-sm text-gray-800">{extractCaptionText(cap.content)}</p>
                   <span className="flex-shrink-0 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-700">
                     {cap.like_count ?? 0} likes
                   </span>
@@ -303,7 +331,7 @@ export default async function ProtectedPage({ searchParams }: ProtectedPageProps
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-relaxed text-gray-900">{caption.content}</p>
+                  <p className="text-sm leading-relaxed text-gray-900">{extractCaptionText(caption.content)}</p>
                   <div className="mt-2 flex items-center gap-3">
                     <span className="text-xs text-gray-400">
                       Likes: <span className="font-semibold text-gray-600">{caption.like_count ?? 0}</span>
