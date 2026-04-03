@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HW5 Caption Pipeline App",
-  description: "Protected route with Google OAuth, image upload, and generated captions",
+  title: "Caption Cracker - AI Caption Generator & Rating",
+  description: "Upload images, generate AI captions, and rate the funniest ones. Join the community!",
 };
 
 export default function RootLayout({
