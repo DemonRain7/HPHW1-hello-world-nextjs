@@ -1,11 +1,52 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
+const PUBLIC_LIST_SIZE = 10
+
+function extractCaptionText(content: string | null): string | null {
+  if (!content) return null
+  const trimmed = content.trim()
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      const items = Array.isArray(parsed) ? parsed : [parsed]
+      const texts: string[] = []
+      for (const item of items) {
+        if (typeof item === 'string' && item.trim()) {
+          texts.push(item.trim())
+        } else if (item && typeof item === 'object') {
+          const text =
+            (item as { content?: unknown; caption?: unknown; text?: unknown }).content ??
+            (item as { content?: unknown; caption?: unknown; text?: unknown }).caption ??
+            (item as { content?: unknown; caption?: unknown; text?: unknown }).text
+          if (typeof text === 'string' && text.trim()) {
+            texts.push(text.trim())
+          }
+        }
+      }
+      if (texts.length > 0) return texts.join(' | ')
+    } catch {
+      // not valid JSON, fall through
+    }
+  }
+  return trimmed
+}
+
 export default async function HomePage() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  // HW2: list of records from a pre-existing Supabase table, rendered on the home page.
+  const { data: publicCaptions, error: publicCaptionsError } = await supabase
+    .from('captions')
+    .select('id, content, like_count, image_id, images(url)')
+    .eq('is_public', true)
+    .not('content', 'is', null)
+    .neq('content', '')
+    .order('created_datetime_utc', { ascending: false })
+    .limit(PUBLIC_LIST_SIZE)
 
   // Fetch some quick stats for the landing page
   const { count: captionCount } = await supabase
@@ -18,7 +59,7 @@ export default async function HomePage() {
     .select('*', { count: 'exact', head: true })
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center gap-8 px-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-8 px-6 py-10">
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Caption Cracker</p>
         <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900">
@@ -41,6 +82,74 @@ export default async function HomePage() {
           <p className="mt-1 text-sm text-gray-500">Votes Cast</p>
         </div>
       </div>
+
+      {/* Public captions list (data list from a pre-existing Supabase table) */}
+      <section>
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-400">
+            Recent Public Captions
+          </h2>
+          <span className="text-xs text-gray-400">
+            {publicCaptions?.length ?? 0} of {captionCount ?? 0}
+          </span>
+        </div>
+
+        {publicCaptionsError && (
+          <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            Failed to load captions: {publicCaptionsError.message}
+          </p>
+        )}
+
+        {!publicCaptionsError && (!publicCaptions || publicCaptions.length === 0) && (
+          <p className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400">
+            No public captions yet.
+          </p>
+        )}
+
+        {publicCaptions && publicCaptions.length > 0 && (
+          <ul className="space-y-2">
+            {publicCaptions.map((caption) => {
+              const imageUrl = (caption.images as { url?: string } | null)?.url ?? null
+              const text = extractCaptionText(caption.content)
+              return (
+                <li
+                  key={caption.id}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                >
+                  {imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={imageUrl}
+                      alt=""
+                      className="h-12 w-12 flex-shrink-0 rounded object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded bg-gray-100">
+                      <svg
+                        className="h-5 w-5 text-gray-300"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                  <p className="min-w-0 flex-1 truncate text-sm text-gray-800">{text}</p>
+                  <span className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                    {caption.like_count ?? 0} ♥
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
 
       {/* How it works */}
       <div>
